@@ -41,3 +41,4 @@ var server = {
       {url: "turn:numb.viagenie.ca", credential: "webrtcdemo", username: "louis%40mozilla.com"}
   ]
 };
+console.log("test");
