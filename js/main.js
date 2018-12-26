@@ -1,44 +1,74 @@
-var socket = io.connect('http://localhost:8080');
+//our username 
+var name; 
+var connectedUser;
+//connecting to our signaling server
+var conn = new WebSocket('ws://localhost:9090');
+ 
+var divLogin = document.querySelector('#divlogin'); 
+var userName = document.querySelector('#username'); 
+var loginBtn = document.querySelector('#loginbtn'); 
 
-$('#loginform').submit(function(event){
-  event.preventDefault();
-  socket.emit('login', $('#username').val());
-  $(".row").css("display", "flex");
-});
+var divPrimry = document.querySelector('#divprimry'); 
+var callToUsernameInput = document.querySelector('#callToUsernameInput');
+var callBtn = document.querySelector('#callBtn'); 
 
-socket.on('newusr', function(user){  
-  $('#users' ).append('<span class=""><input id="'+user.id+'" type="button" value="'+ user.name +'">');
-});
+var hangUpBtn = document.querySelector('#hangUpBtn');
+  
+var localVideo = document.querySelector('#localVideo'); 
+var remoteVideo = document.querySelector('#remoteVideo'); 
 
-socket.on('call', function(i){  
-  for(let k = 0 ; k< i ; k++){  
-    $('#'+k).click(function(){
+var yourConn; 
+var stream;
+  
+divPrimry.style.display = "none";
 
-    });
-  }
-});
 
-socket.on('logged',function(users){
-  $('#divlogin').toggle();
-});
+navigator.getUserMedia = navigator.getUserMedia || navigator.mozGetUserMedia || navigator.webkitGetUserMedia;    
 
-socket.on('disusr', function(user){
-  $('#' + user.id).remove();
-});
 
-socket.on('reçu',function(e){
-  console.log("salut : " + e.target);
-}); 
-
-function sendToServer(data){
-      socket.emit('envoi',data);
-}
-
-var server = {
-  iceServers: [
-      {url: "stun:23.21.150.121"},
-      {url: "stun:stun.l.google.com:19302"},
-      {url: "turn:numb.viagenie.ca", credential: "webrtcdemo", username: "louis%40mozilla.com"}
-  ]
+conn.onopen = function () { 
+   console.log("Connection avec le serveur de sinialisation"); 
 };
-console.log("test");
+  
+//when we got a message from a signaling server 
+conn.onmessage = function (msg) { 
+   console.log("Le message : ", msg.data);
+   var data = JSON.parse(msg.data); 
+   console.log(callToUsernameInput.value);
+   switch(data.type) { 
+      case "login": 
+         handleLogin(data.success); 
+         break; 
+      //when somebody wants to call us 
+      case "offer": 
+         handleOffer(data.offer, data.name); 
+         break; 
+      case "answer": 
+         handleAnswer(data.answer); 
+         break; 
+      //when a remote peer sends an ice candidate to us 
+      case "candidate": 
+         handleCandidate(data.candidate); 
+         break; 
+      case "leave": 
+         handleLeave(); 
+         break; 
+      default: 
+         break; 
+   }
+};
+  
+conn.onerror = function (err) { 
+   console.log("error :", err); 
+};
+  
+//alias for sending JSON encoded messages 
+function send(message) { 
+   //attach the other peer username to our messages 
+   if (connectedUser) { 
+      message.name = connectedUser; 
+   } 
+   
+   conn.send(JSON.stringify(message)); 
+};
+  

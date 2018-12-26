@@ -10,41 +10,28 @@
 		
 	</head>
 	<body>
-		<div>
-			<div id="divlogin" class="loginDiv">
-				<form id="loginform">
-					<h1>Bienvenue</h1>
-					<p>Enter a username: 
-						<input id="username" type="text" maxlength="12" required
-							autocomplete="username" inputmode="verbatim" placeholder="Username">
-					<input type="submit" name="login" value="Log in"></p>
-				</form>
-			</div>
-
-			<div id="divPrinc" class="row">
-
-			    <div class="usersDiv">
-					<h2>Liste d'amis :</h2>
-					<div id="users"></div>
-				</div>
-
-				<div class="videosDiv">
-					<div>
-						<h2>Réception :</h2>
-						<video id="receiver-video" width="100%" height="400px"></video>
-					</div>
-					<div id="separateur" class="separateur">
-
-					</div>
-					<div>
-						<h2>Envoi :</h2>
-						<video id="emitter-video" width="100%" height="400px"></video>
-					</div>
-				</div>
-			</div>
+		<img src="images/webRTC.png" hieght="250px" width="250px">
+		<div id="divlogin" class="loginDiv">
+			<form id="loginform">
+				<h1>Bienvenue</h1>
+				<h2 style= "color: #007bff;">WebRTC Video Demo</h2> 
+				<input id="username" type="text" maxlength="12" required
+					autocomplete="username" inputmode="verbatim" placeholder="Enter a username :">
+				<input id ="loginbtn" type="button" name="login" value="Login" class="btn btn-primary">
+			</form>
 		</div>
+
+		<div id="divprimry" class="div-primry">
+			<video id="localVideo" autoplay></video>
+			<video id="remoteVideo" autoplay></video>
+			<div class="text-center"> 
+           		<input id="callToUsernameInput" type="text" maxlength="12" required
+					autocomplete="callToUsernameInput" inputmode="verbatim" placeholder="Enter a username :">
+           		<button id = "callBtn" class="call btn">Call</button> 
+           		<button id = "hangUpBtn" class="hangup btn">Hang Up</button> 
+      		</div> 
+      	</div>
 		<script src = "js/jquery.min.js"></script>
-		<script src = "http://localhost:8080/socket.io/socket.io.js"></script>
 		<script src = "js/main.js"></script>
 	</body>
 </html>
