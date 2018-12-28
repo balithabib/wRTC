@@ -3,7 +3,7 @@ var name;
 //
 var user;
 // connexion à notre serveur de signalisation
-var connection = new WebSocket('ws://localhost:5555');
+var connection = new WebSocket('ws://http:52.47.197.4/5555');
  
 // variables récuperer à l'aide des query selector 
 //
