@@ -6,6 +6,11 @@
 		<meta http-equiv="content-type" content="text/html; charset=UTF-8">
 		<meta name="viewport" content="initial-scale=1, user-scalable=no, maximum-scale=1, width=device-width, height=device-height">
       
+
+
+
+
+
 		<link rel="stylesheet" type="text/css" href="css/style.css"> 
 		
 	</head>
@@ -17,7 +22,7 @@
 				<h2 style= "color: #007bff;">WebRTC Video Demo</h2> 
 				<input id="username" type="text" maxlength="12" required
 					autocomplete="username" inputmode="verbatim" placeholder="Enter a username :">
-				<input id ="loginbtn" type="button" name="login" value="Login" class="btn btn-primary">
+				<input id ="loginButton" type="button" name="login" value="Login" class="btn btn-primary">
 			</form>
 		</div>
 
@@ -25,10 +30,10 @@
 			<video id="localVideo" autoplay></video>
 			<video id="remoteVideo" autoplay></video>
 			<div class="text-center"> 
-           		<input id="callToUsernameInput" type="text" maxlength="12" required
-					autocomplete="callToUsernameInput" inputmode="verbatim" placeholder="Enter a username :">
-           		<button id = "callBtn" class="call btn">Call</button> 
-           		<button id = "hangUpBtn" class="hangup btn">Hang Up</button> 
+           		<input id="callToUsername" type="text" maxlength="12" required
+					autocomplete="callToUsername" inputmode="verbatim" placeholder="Enter a username :">
+           		<button id = "callButton" class="call btn">Call</button> 
+           		<button id = "hangUpButton" class="hangup btn">Hang Up</button> 
       		</div> 
       	</div>
 		<script src = "js/jquery.min.js"></script>
