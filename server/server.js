@@ -1,7 +1,7 @@
 // importation de notre bibliothèque websocket
 var WebSocketServer = require('ws').Server; 
 // création d'un serveur Websocket sur le port 8080
-var webSocket = new WebSocketServer({port: 8080}); 
+var webSocket = new WebSocketServer("ws://52.47.197.4"); 
 // tous les utilisateurs connectés aux serveur sont sauvegardés dans cette variable
 var users = {};
   
