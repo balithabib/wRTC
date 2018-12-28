@@ -3,11 +3,7 @@ var name;
 //
 var user;
 // connexion à notre serveur de signalisation
-<<<<<<< HEAD
-var connection = new WebSocket('ws://52.47.197.4');
-=======
-var connection = new WebSocket('ws://http:52.47.197.4/5555');
->>>>>>> bf8aa2748362f7266e06b71a3fda609af79124cf
+var connection = new WebSocket("ws://localhost:8080");
  
 // variables récuperer à l'aide des query selector 
 //
@@ -117,7 +113,7 @@ function handleLogin(success) {
          	// configuration du flux d'écoute
          	localPeer.addStream(stream); 
          	// lorsqu'un utilisateur distant ajoute un flux à la connexion entre homologues, nous l'afficherons
-        	localPeer.ontrack = function (event) { 
+        	localPeer.onaddstream = function (event) { 
             	remoteVideo.srcObject = event.stream; 
         	};
          	//Configuration de la gestion de la glace
@@ -206,7 +202,7 @@ function handleLeave() {
    
    localPeer.close(); 
    localPeer.onicecandidate = null; 
-   localPeer.ontrack = null; 
+   localPeer.onaddstream = null; 
 };
 
 /*
