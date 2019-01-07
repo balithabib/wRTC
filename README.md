@@ -1,6 +1,5 @@
 # WebRTC
-# WebRTC
-#Communication en temps réel avec WebRTC :
+# Communication en temps réel avec WebRTC :
 WebRTC est un projet open source destiné à permettre la communication en temps réel de données audio, vidéo et de données dans des applications Web et natives.
 
 
