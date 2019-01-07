@@ -7,7 +7,6 @@ const url = require('url');
 const fs = require('fs');
 const path = require('path');
 const ws = require('websocket').server;
-const _sodium = require('libsodium-wrappers');
 
 
 
@@ -77,7 +76,6 @@ var websocket = new ws({httpServer: server});
 */ 
  websocket.on('request',(request)=>{
     print("connected");
-   sodiumKeyServerGen();
     var connection = request.accept(null, request.origin);
     
     request.setMaxListeners(100);
