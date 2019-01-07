@@ -35,7 +35,7 @@ navigator.getUserMedia = navigator.getUserMedia || navigator.mozGetUserMedia || 
 //**************************************************//
 
 /**
-* Un gestionnaire d'évènement onopen (pour la connexion d'un utilisateur).  
+* Un gestionnaire d'évènement onopen  détecte l'ouverture d'une connexion avec le serveur..  
 *
 * @author: Habib & Anis
 */ 

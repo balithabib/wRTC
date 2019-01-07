@@ -121,7 +121,7 @@ webSocket.on('connection', function(socket) {
    }); 
    
    /**
-   * Un gestionnaire d'évènement "close", quand l'utilisateur quitte, par exemple ferme une fenêtre de navigateur. 
+   * Un gestionnaire d'évènement "close", détecte la fermeture de la connexion à l'initiative du serveur. 
    * @author: Habib & Anis
    */ 
    socket.on("close", function() { 
