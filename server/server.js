@@ -2,15 +2,26 @@
 var WebSocketServer = require('ws').Server; 
 // création d'un serveur Websocket sur le port 8080
 var webSocket = new WebSocketServer({port: 8080}); 
-// tous les utilisateurs connectés aux serveur sont sauvegardés dans cette variable
+// variable dans tous les utilisateurs connectés aux serveur sont sauvegardés
 var users = {};
   
-// lorsqu'un utilisateur se connecte à votre serveur
-webSocket.on('connection', function(connection) {
+/**
+* Un gestionnaire d'évènement "connection", lorsqu'un utilisateur se connecte à votre serveur.  
+*
+* @author: Habib & Anis
+* @param {object} socket la connection actuelle courante
+*/ 
+webSocket.on('connection', function(socket) {
    console.log("Utilisateur connecté");
-   // quand le serveur reçoit un message d'un utilisateur connecté 
-   connection.on('message', function(message) { 
-      var data; 
+
+   /**
+   * Un gestionnaire d'évènement "message", quand le serveur reçoit un message d'un utilisateur connecté.   
+   *
+   * @author: Habib & Anis
+   * @param {object} message le message reçu
+   */ 
+   socket.on('message', function(message) { 
+      var data;
       //on  n'acceptant que les messages JSON
       try { 
          data = JSON.parse(message); 
@@ -26,16 +37,16 @@ webSocket.on('connection', function(connection) {
             console.log("User logged ", data.name); 
             // si quelqu'un est connecté avec ce nom d'utilisateur, alors refuse
             if(users[data.name]) { 
-               sendTo(connection, { 
+               sendTo(socket, { 
                   type: "login", 
                   success: false 
                }); 
             } else { 
                // enregistrer la connexion (socket) de l'utilisateur sur le serveur 
-               users[data.name] = connection; 
-               connection.name = data.name; 
+               users[data.name] = socket; 
+               socket.name = data.name; 
                // envoi d'un message de type login avec une valeur de success vrai à l'utilisateur
-               sendTo(connection, { 
+               sendTo(socket, { 
                   type: "login", 
                   success: true 
                }); 
@@ -43,19 +54,17 @@ webSocket.on('connection', function(connection) {
             break;
          // lorsqu'un utilisateur tente d'appele un autre utilisateur  
          case "offer": 
-             console.log("Envoi offre à: ", data.name);
-            
+            console.log("Envoi offre à: ", data.name);      
+            var localSocket = users[data.name]; 
             // si l'utilisateur data.name existe
-            var con = users[data.name]; 
-            
-            if(con != null) { 
+            if(localSocket != null) { 
                // paramétrer cet utilisateur à connecté avec l'autre utilisateur
-               connection.otherName = data.name; 
+               socket.otherName = data.name; 
                // envoye des détails de l'offre à cette utilisateur
-               sendTo(con, { 
+               sendTo(localSocket, { 
                   type: "offer", 
                   offer: data.offer, 
-                  name: connection.name 
+                  name: socket.name 
                }); 
             }
             break;
@@ -63,13 +72,13 @@ webSocket.on('connection', function(connection) {
          case "answer": 
             console.log("Envoi de la réponse à: ", data.name); 
             // si l'utilisateur data.name existe
-            var conn = users[data.name]; 
+            var localSocket = users[data.name]; 
             
-            if(conn != null) {
+            if(localSocket != null) {
                // paramétrer cet utilisateur à connecté avec l'autre utilisateur 
-               connection.otherName = data.name; 
+               socket.otherName = data.name; 
                // envoye des détails de la réponse à cette utilisateur
-               sendTo(conn, { 
+               sendTo(localSocket, { 
                   type: "answer", 
                   answer: data.answer 
                }); 
@@ -78,10 +87,10 @@ webSocket.on('connection', function(connection) {
          // lorsqu'un utilisateur tente de envoiyé des candidats  
          case "candidate": 
             console.log("Envoi du candidat à: ",data.name); 
-            var conn = users[data.name];
+            var localSocket = users[data.name];
             
-            if(conn != null) { 
-               sendTo(conn, { 
+            if(localSocket != null) { 
+               sendTo(localSocket, { 
                   type: "candidate", 
                   candidate: data.candidate 
                }); 
@@ -90,19 +99,19 @@ webSocket.on('connection', function(connection) {
          // lorsqu'un utilisateur tente de se déconnecter avec l'autre utilisateur   
          case "leave": 
             console.log("Déconnection de ", data.name); 
-            var conn = users[data.name]; 
-            conn.otherName = null; 
+            var localSocket = users[data.name]; 
+            //localSocket.otherName = null; 
 
             // informe l'autre utilisateur afin qu'il puisse déconnecter sa connexion homologue
-            if(conn != null) {
-               sendTo(conn, { 
+            if(localSocket != null) {
+               sendTo(localSocket, { 
                   type: "leave" 
               }); 
             }
             break;
             
          default: 
-            sendTo(connection, { 
+            sendTo(socket, { 
                type: "error", 
                message: "Command not found: " + data.type 
             });             
@@ -111,19 +120,22 @@ webSocket.on('connection', function(connection) {
       
    }); 
    
-   // quand l'utilisateur quitte, par exemple ferme une fenêtre de navigateur
-   connection.on("close", function() { 
+   /**
+   * Un gestionnaire d'évènement "close", quand l'utilisateur quitte, par exemple ferme une fenêtre de navigateur. 
+   * @author: Habib & Anis
+   */ 
+   socket.on("close", function() { 
    
-      if(connection.name) { 
-         delete users[connection.name]; 
+      if(socket.name) { 
+         delete users[socket.name]; 
          
-         if(connection.otherName) { 
-            console.log("Déconnection de ", connection.otherName); 
-            var conn = users[connection.otherName]; 
-            conn.otherName = null;
+         if(socket.otherName) { 
+            console.log("Déconnection de ", socket.otherName); 
+            var localSocket = users[socket.otherName]; 
+            //localSocket.otherName = null;
             
-            if(conn != null) { 
-               sendTo(conn, { 
+            if(localSocket != null) { 
+               sendTo(localSocket, { 
                   type: "leave" 
                }); 
             }
@@ -132,10 +144,16 @@ webSocket.on('connection', function(connection) {
       
    });  
 
-    connection.send('{"type":true, "success":true}');  
+    socket.send('{"type":true, "success":true}');  
 });
   
- // fonction qui permet d'envoiyer des message à un utilisateur   
-function sendTo(connection, message) { 
-   connection.send(JSON.stringify(message)); 
+/**
+* Fonction qui permet d'envoiyer des message à un utilisateur (à une socket précise).  
+*
+* @author: Habib & Anis
+* @this {object} socket la connexion actuelle
+* @this {object} message la message à envoiyer
+*/
+function sendTo(socket, message) { 
+   socket.send(JSON.stringify(message)); 
 }

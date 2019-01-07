@@ -1,12 +1,15 @@
+//**************************************************//
+//les variables
+//**************************************************//
+
 //identifiant pour l'utilisateur
 var name; 
 //
 var user;
 // connexion à notre serveur de signalisation
-var connection = new WebSocket("ws://localhost:8080");
+var socket = new WebSocket("ws://localhost:8080");
  
 // variables récuperer à l'aide des query selector 
-//
 var divLogin = document.querySelector('#divlogin'); 
 var userName = document.querySelector('#username'); 
 var loginButton = document.querySelector('#loginButton'); 
@@ -17,28 +20,47 @@ var remoteVideo = document.querySelector('#remoteVideo');
 var callToUsername = document.querySelector('#callToUsername');
 var callButton = document.querySelector('#callButton'); 
 var hangUpButton = document.querySelector('#hangUpButton');
-//  
-var localPeer; 
+//  variable pour l'objet RTCPeerConnection
+var localPeer;
+// variable pour le flux stream (video et audio) 
 var stream;
-//  
+//  ici on cache la page de login 
 divPrimry.style.display = "none";
 
-//
+// pour avoir accez à la camera peut importe le navigateur
 navigator.getUserMedia = navigator.getUserMedia || navigator.mozGetUserMedia || navigator.webkitGetUserMedia;    
 
-//
-connection.onopen = function () { 
-   console.log("Connection avec le serveur de sinialisation est réussi"); 
+//**************************************************//
+//les evenement du serveur de sinialisation websocket
+//**************************************************//
+
+/**
+* Un gestionnaire d'évènement onopen (pour la connexion d'un utilisateur).  
+*
+* @author: Habib & Anis
+*/ 
+socket.onopen = function () { 
+  console.log("Connection avec le serveur de sinialisation est réussi"); 
 };
 
-//  
-connection.onerror = function (err) { 
-   console.log("error :", err); 
+/**
+* Un gestionnaire d'évènement onerror (en cas d'erreur).  
+*
+* @author: Habib & Anis
+* @param {object} err : l'erreur reçu du serveur.
+*/ 
+socket.onerror = function (err) { 
+  console.log("error :", err); 
 };
 
-/* le code à executer quand nous avons reçu un message d'un serveur de signalisation
- en utilisant un switch pour traités plusieurs cas */
-connection.onmessage = function (message) { 
+/**
+* Un gestionnaire d'évènement onmessage de notre serveur de signalisation
+* en utilisant un switch pour traités plusieurs cas et types de messages.  
+*
+* @author: Habib & Anis
+* @param {object} message : le message reçu du serveur.
+*/ 
+socket.onmessage = function (message) { 
    console.log("Le message : ", message.data);
    var data = JSON.parse(message.data); 
    console.log(callToUsername.value);
@@ -56,11 +78,11 @@ connection.onmessage = function (message) {
         handleAnswer(data.answer); 
         break; 
       case "candidate": 
-      	// quand un pair distant nous envoie un candidat glace
+      	// quand un utilisateur distant nous envoie un candidat
         handleCandidate(data.candidate); 
         break; 
       case "leave":
-        //
+        // quand un utilisateur quitte la déscussion  
         handleLeave(); 
         break; 
       default: 
@@ -68,30 +90,96 @@ connection.onmessage = function (message) {
    }
 };
   
-// fonction pour l'envoi de messages codés sous forme JSON
+/**
+* Fonction pour l'envoi de messages codés sous forme JSON.  
+*
+* @author: Habib & Anis
+* @this {send}
+* @param {object} message : le message à envoiyer.
+*/ 
 function send(message) { 
-   // affecter le nom de l'autre utilisateur peer à nos messages
-   if (user) { 
-      message.name = user; 
-   } 
-   // envoi du message à l'aide nde notre serveur de sinialisation
-   connection.send(JSON.stringify(message)); 
+  // affecter le nom de l'autre utilisateur peer à nos messages
+  if (user) { 
+    message.name = user; 
+  } 
+  // envoi du message à l'aide nde notre serveur de sinialisation
+  socket.send(JSON.stringify(message)); 
 };
-  
-// le code éxecuté quand l'utilisateur clique sur le bouton loginButton
+
+//**************************************************//
+//les evenement liée au bouton de notre site
+//**************************************************//
+ 
+/**
+* Le code éxecuté quand l'utilisateur clique sur le bouton loginButton.  
+*
+* @author: Habib & Anis
+* @param {object} message : le message à envoiyer.
+*/ 
 loginButton.addEventListener("click", function (event) { 
-   name = username.value;
-   //si l'utilisateur tape un username
-   if (name.length > 0) { 
-   		// envoi un message de type login avec le nom de l'utilisateur au serveur
-      	send({ 
-        	type: "login", 
-         	name: name 
-      	}); 
-   }  
+  name = username.value;
+  //si l'utilisateur tape un username
+  if (name.length > 0) { 
+   	// envoi un message de type login avec le nom de l'utilisateur au serveur
+  	send({ 
+    	type: "login", 
+     	name: name 
+  	}); 
+  }  
 });
 
-//fonction executé lorsque l'utilisateur est logé correctement    
+/**
+* Le code executé lorsque on click sur le bouton call  .  
+*
+* @author: Habib & Anis
+*/ 
+callButton.addEventListener("click", function () {
+    var username = callToUsername.value;
+    //si en tape un username
+    if (username.length > 0) {
+        user = username;
+        // creation de l'offre 
+        localPeer.createOffer().then(function (offer) {
+          // modifie la description locale associée à la connexion avec en argument l'offre crée
+
+          localPeer.setLocalDescription(offer);
+          // envoi d'un message de type offer au serveur 
+          send({ 
+              type: "offer", 
+              offer: offer 
+          }); 
+        }).catch(function (error) { 
+          console.log(error);
+          alert("Erreur lors de la création d'une offre"); 
+        }); 
+    } 
+});
+  
+/**
+* Le code executé lorsque on click sur le bouton hangUP.  
+*
+* @author: Habib & Anis
+*/ 
+hangUpButton.addEventListener("click", function () { 
+  //envoi d'un message de type leave au serveur
+  send({ 
+      type: "leave" 
+  });  
+  // appelle de la fonction handleLeave
+  handleLeave(); 
+});
+
+//**************************************************//
+//les fonctions corspondante à chaque evenement
+//**************************************************//
+ 
+/**
+* Fonction executé lorsque l'utilisateur est logé correctement.  
+*
+* @author: Habib & Anis
+* @this {handleLogin}
+* @param {boolean} success : oui le nom d'utilisateur est bon, sinon.
+*/ 
 function handleLogin(success) { 
    if (success === false) { 
       alert("-_-  Essayez un autre nom d'utilisateur !!!"); 
@@ -106,17 +194,23 @@ function handleLogin(success) {
          	stream = myStream; 
          	// affichage du flux vidéo local sur la page
         	localVideo.srcObject =stream;         
-			//variable de configuration de l'objet RTCPeerConnection, on utilisent le serveur stun de Google 
-         	var configuration = { "iceServers": [{ "urls": "stun:stun2.1.google.com:19302" }]}; 
+			    //variable de configuration de l'objet RTCPeerconnection, on utilisent les serveurs stun/turn de Google  
+         	var configuration = { "iceServers": 
+              [{ "urls": "stun:stun2.1.google.com:19302" },
+              {urls: 'turn:numb.viagenie.ca',credential: 'muazkh',username: 'webrtc@live.com'}]}; 
         	// création de l'homologues local à l'aide de l'objet RTCPeerConnection
          	localPeer = new RTCPeerConnection(configuration); 
-         	// configuration du flux d'écoute
-         	localPeer.addStream(stream); 
-         	// lorsqu'un utilisateur distant ajoute un flux à la connexion entre homologues, nous l'afficherons
-        	localPeer.onaddstream = function (event) { 
-            	remoteVideo.srcObject = event.stream; 
+         	// ajoute une nouvelle piste multimédia à l'ensemble de pistes qui sera transmise à l'autre homologue.
+          // à l'aide de  la méthode addTrack()  
+          stream.getTracks().forEach(track => localPeer.addTrack(track, stream));
+         	// La propriété ontrack est un eventHandler qui spécifie une fonction à appeller 
+          // lorsque l'événement de track se produit, indiquant qu'une piste a été ajoutée à RTCPeerConnection
+          localPeer.ontrack = function (event) { 
+            	remoteVideo.srcObject = event.streams[0]; 
         	};
-         	//Configuration de la gestion de la glace
+          // La propriété onicecandidate est un eventHandler qui spécifie une fonction qui doit
+          // livrer le candidat ICE, dont le SDP se trouve dans la propriété event.candidate
+          // à l'homologue distant via le serveur de signalisation
          	localPeer.onicecandidate = function (event) { 
             	// si l'evenement candidate est déclanché 
             	if (event.candidate) { 
@@ -134,79 +228,68 @@ function handleLogin(success) {
    	} 
 }
   
-//le code executé lorsque on click sur le bouton call  
-callButton.addEventListener("click", function () {
-   	var username = callToUsername.value;
-   	//si en tape un username
-   	if (username.length > 0) {
-      	user = username;
-      	// creation de l'offre 
-      	localPeer.createOffer(function (offer) {
-      		// envoi d'un message de type offer au serveur 
-        	send({ 
-            	type: "offer", 
-            	offer: offer 
-         	}); 
-         	// modifie la description locale associée à la connexion avec en argument l'offre crée
-        	localPeer.setLocalDescription(offer); 
-      	}, function (error) { 
-        	alert("Erreur lors de la création d'une offre"); 
-      	}); 
-   	} 
-});
-
-//fonction executé quand quelqu'un nous envoie une offre  
+/**
+* Fonction executé quand quelqu'un nous envoie une offre.  
+*
+* @author: Habib & Anis
+* @this {handleOffer}
+* @param {SDP offer} offer l'offre reçue d'un homologue distant .
+* @param {string} name le nom d'un homologue distant.
+*/ 
 function handleOffer(offer, name) { 
-   	user = name; 
-   	localPeer.setRemoteDescription(new RTCSessionDescription(offer));
-   	// créer une réponse à une offre
-   	localPeer.createAnswer(function (answer) { 
-   		// modifie la description locale associée à la connexion avec en argument la réponse crée
-      	localPeer.setLocalDescription(answer); 
-        // envoi d'un messsage de type answer au serveur
-      	send({ 
-         	type: "answer", 
-        	answer: answer 
-      	}); 
-	}, function (error) { 
-      	alert("Erreur lors de la création d'une réponse"); 
-  	}); 
+  user = name; 
+  // cette méthode  modifie la description distante associée à la connexion.
+  // cette description spécifie les propriétés de l'extrémité distante de la connexion
+  localPeer.setRemoteDescription(new RTCSessionDescription(offer));
+  // createAnswer est une méthode qui crée une réponse SDP à une offre reçue d'un homologue distant
+  localPeer.createAnswer().then(function (answer) { 
+  	// modifie la description locale associée à la connexion avec en argument la réponse crée
+    localPeer.setLocalDescription(answer); 
+    // envoi d'un messsage de type answer au serveur
+    send({ 
+      type: "answer", 
+      answer: answer 
+    }); 
+	}).catch(function (error) { 
+    alert("Erreur lors de la création d'une réponse"); 
+  }); 
 };
   
-// fonction executé quand on reçoit une réponse d'un utilisateur distant
+/**
+* Fonction executé quand on reçoit une réponse d'un utilisateur distant.  
+*
+* @author: Habib & Anis
+* @this {handleAnswer}
+* @param {SDP answer} answer la réponce reçue d'un homologue distant .
+*/ 
 function handleAnswer(answer) { 	
-  	// modifie la description distante associée à la connexion avec en argument la réponse reçu
-  	localPeer.setRemoteDescription(new RTCSessionDescription(answer)); 
+  // modifie la description distante associée à la connexion avec en argument la réponse reçu
+  localPeer.setRemoteDescription(new RTCSessionDescription(answer)); 
 };
   
-// fonction executé quand on reçoit un candidat glace d'un utilisateur distant 
+/**
+* Fonction executé quand on reçoit un candidat glace d'un utilisateur distant .  
+*
+* @author: Habib & Anis
+* @this {handleCandidate}
+* @param {candidate} candidate la cadidate qui décrit l'état de l'extrémité distante de la connexion.
+*/ 
 function handleCandidate(candidate) { 
-	// modifie la description distante associée à la connexion avec en argument un candidat glace reçu
-   	localPeer.addIceCandidate(new RTCIceCandidate(candidate)); 
+	// ajouter le nouveau candidat ICE de l'homologue distant
+  // et elle envoie le candidat nouvellement reçu à l'agent ICE du navigateur.
+  localPeer.addIceCandidate(new RTCIceCandidate(candidate)); 
 };
    
-//le code executé lorsque on click sur le bouton hangUP  
-hangUpButton.addEventListener("click", function () { 
-   	//envoi d'un message de type leave au serveur
-   	send({ 
-      	type: "leave" 
-   	});  
-   	// appelle de la fonction handleLeave
-	handleLeave(); 
-});
-  
-// fonction executé lorsque l'utilisateur raccrouche l'appele actuelle  
+/**
+* Fonction executé lorsque l'utilisateur raccrouche l'appele actuelle.  
+*
+* @author: Habib & Anis
+* @this {handleLeave}
+*/ 
 function handleLeave() { 
-   user = null; 
-   remoteVideo.src = null; 
-   
-   localPeer.close(); 
-   localPeer.onicecandidate = null; 
-   localPeer.onaddstream = null; 
+  user = null; 
+  remoteVideo.src = null; 
+  localPeer.close(); 
+  localPeer.onicecandidate = null; 
+  localPeer.ontrack = null; 
 };
-
-/*
-boutons 
-               <input id = "callButton" type="image" src="c2.png" alt="Call" height="50px" width="50px" class="Button"/>
-               <input id = "hangUpButton" type="image" src="c1.png" alt="Hang Up" height="50px" width="50px" class="Button"/>
-*/
