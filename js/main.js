@@ -1,3 +1,6 @@
+$(function () {
+  // if user is running mozilla then use it's built-in WebSocket
+  window.WebSocket = window.WebSocket || window.MozWebSocket;
 //**************************************************//
 //les variables
 //**************************************************//
@@ -24,6 +27,11 @@ var hangUpButton = document.querySelector('#hangUpButton');
 var localPeer;
 // variable pour le flux stream (video et audio) 
 var stream;
+//variable de configuration de l'objet RTCPeerconnection, on utilisent les serveurs stun/turn de Google  
+var configuration = { "iceServers": 
+              [{ "urls": "stun:stun2.1.google.com:19302" },
+              {urls: 'turn:numb.viagenie.ca',credential: 'muazkh',username: 'webrtc@live.com'}]}; 
+
 //  ici on cache la page de login 
 divPrimry.style.display = "none";
 
@@ -106,6 +114,31 @@ function send(message) {
   socket.send(JSON.stringify(message)); 
 };
 
+function initRTC(){
+// création de l'homologues local à l'aide de l'objet RTCPeerConnection
+         	localPeer = new RTCPeerConnection(configuration); 
+         	// ajoute une nouvelle piste multimédia à l'ensemble de pistes qui sera transmise à l'autre homologue.
+          	// à l'aide de  la méthode addTrack()  
+          	stream.getTracks().forEach(track => localPeer.addTrack(track, stream));
+         	// La propriété ontrack est un eventHandler qui spécifie une fonction à appeller 
+          	// lorsque l'événement de track se produit, indiquant qu'une piste a été ajoutée à RTCPeerConnection
+          	localPeer.ontrack = function (event) { 
+            	remoteVideo.srcObject = event.streams[0]; 
+        	};
+          	// La propriété onicecandidate est un eventHandler qui spécifie une fonction qui doit
+          	// livrer le candidat ICE, dont le SDP se trouve dans la propriété event.candidate
+          	// à l'homologue distant via le serveur de signalisation
+         	localPeer.onicecandidate = function (event) { 
+            	// si l'evenement candidate est déclanché 
+            	if (event.candidate) { 
+            		// envoi d'un message de type candidate
+	               	send({ 
+	                  	type: "candidate", 
+	                  	candidate: event.candidate 
+	               	}); 
+            	} 
+         	};  
+}
 //**************************************************//
 //les evenement liée au bouton de notre site
 //**************************************************//
@@ -135,6 +168,9 @@ loginButton.addEventListener("click", function (event) {
 */ 
 callButton.addEventListener("click", function () {
     var username = callToUsername.value;
+    if(localPeer.signalingState === 'closed'){	
+  		initRTC();
+  	}
     //si en tape un username
     if (username.length > 0) {
         user = username;
@@ -194,33 +230,7 @@ function handleLogin(success) {
          	stream = myStream; 
          	// affichage du flux vidéo local sur la page
         	localVideo.srcObject =stream;         
-			    //variable de configuration de l'objet RTCPeerconnection, on utilisent les serveurs stun/turn de Google  
-         	var configuration = { "iceServers": 
-              [{ "urls": "stun:stun2.1.google.com:19302" },
-              {urls: 'turn:numb.viagenie.ca',credential: 'muazkh',username: 'webrtc@live.com'}]}; 
-        	// création de l'homologues local à l'aide de l'objet RTCPeerConnection
-         	localPeer = new RTCPeerConnection(configuration); 
-         	// ajoute une nouvelle piste multimédia à l'ensemble de pistes qui sera transmise à l'autre homologue.
-          // à l'aide de  la méthode addTrack()  
-          stream.getTracks().forEach(track => localPeer.addTrack(track, stream));
-         	// La propriété ontrack est un eventHandler qui spécifie une fonction à appeller 
-          // lorsque l'événement de track se produit, indiquant qu'une piste a été ajoutée à RTCPeerConnection
-          localPeer.ontrack = function (event) { 
-            	remoteVideo.srcObject = event.streams[0]; 
-        	};
-          // La propriété onicecandidate est un eventHandler qui spécifie une fonction qui doit
-          // livrer le candidat ICE, dont le SDP se trouve dans la propriété event.candidate
-          // à l'homologue distant via le serveur de signalisation
-         	localPeer.onicecandidate = function (event) { 
-            	// si l'evenement candidate est déclanché 
-            	if (event.candidate) { 
-            		// envoi d'un message de type candidate
-	               	send({ 
-	                  	type: "candidate", 
-	                  	candidate: event.candidate 
-	               	}); 
-            	} 
-         	};  
+        	initRTC();
       	}).catch (function(error) {
       		//en cas d'erreur affichage de l'erreur 
         	console.log(error); 
@@ -238,6 +248,9 @@ function handleLogin(success) {
 */ 
 function handleOffer(offer, name) { 
   user = name; 
+  if(localPeer.signalingState === 'closed'){	
+  	initRTC();
+  }
   // cette méthode  modifie la description distante associée à la connexion.
   // cette description spécifie les propriétés de l'extrémité distante de la connexion
   localPeer.setRemoteDescription(new RTCSessionDescription(offer));
@@ -250,8 +263,8 @@ function handleOffer(offer, name) {
       type: "answer", 
       answer: answer 
     }); 
-	}).catch(function (error) { 
-    alert("Erreur lors de la création d'une réponse"); 
+  }).catch(function (error) { 
+  	alert("Erreur lors de la création d'une réponse"); 
   }); 
 };
   
@@ -293,3 +306,5 @@ function handleLeave() {
   localPeer.onicecandidate = null; 
   localPeer.ontrack = null; 
 };
+
+});

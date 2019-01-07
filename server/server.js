@@ -1,39 +1,102 @@
-// importation de notre bibliothèque websocket
-var WebSocketServer = require('ws').Server; 
-// création d'un serveur Websocket sur le port 8080
-var webSocket = new WebSocketServer({port: 8080}); 
+function print(args){
+   console.log(args);
+}
 // variable dans tous les utilisateurs connectés aux serveur sont sauvegardés
 var users = {};
+// importation des bibliothèques 
+const http = require('http');
+const url = require('url');
+const fs = require('fs');
+const path = require('path');
+const ws = require('websocket').server;
+// you can pass the parameter in the command line. e.g. node static_server.js 3000
+
+const mimeType = {
+   '.html': 'text/html',
+   '.js': 'text/javascript',
+   '.json': 'application/json',
+   '.css': 'text/css',
+   '.png': 'image/png',
+   '.jpg': 'image/jpeg',
+};
+ 
+var server = http.createServer(function (req, res) {
+
+   const urlreq = url.parse(req.url);
+   const secureUrl = /^(\.\.[\/\\])+/
+   const sanitizePath = path.normalize(urlreq.pathname).replace(secureUrl, '');
+   let pathname = path.join('../', sanitizePath);
   
+   fs.exists(pathname, function (exist) {
+     if(!exist) {
+       // if the file is not found, return 404
+       res.statusCode = 404;
+       res.end(`File ${pathname} not found!`);
+       return;
+     }
+ 
+     // if is a directory, then look for index.html
+     if (fs.statSync(pathname).isDirectory()) {
+       pathname += '/index.html';
+     }
+ 
+     // read file from file system
+     fs.readFile(pathname, function(err, data){
+       if(err){
+         res.statusCode = 500;
+         res.end(`Error getting the file: ${err}.`);
+       } else {
+         // based on the URL path, extract the file extention. e.g. .js, .doc, ...
+         const ext = path.parse(pathname).ext;
+         // if the file is found, set Content-type and send data
+         res.setHeader('Content-type', mimeType[ext] || 'text/plain');
+         res.end(data);
+       }
+     });
+   });
+
+ }).listen(8080);
+ 
+
+var websocket = new ws({httpServer: server});
+
 /**
 * Un gestionnaire d'évènement "connection", lorsqu'un utilisateur se connecte à votre serveur.  
 *
 * @author: Habib & Anis
-* @param {object} socket la connection actuelle courante
+* @param {request} request contient la requete du clien
 */ 
-webSocket.on('connection', function(socket) {
-   console.log("Utilisateur connecté");
+ websocket.on('request',(request)=>{
+    print("connected");
 
-   /**
-   * Un gestionnaire d'évènement "message", quand le serveur reçoit un message d'un utilisateur connecté.   
-   *
-   * @author: Habib & Anis
-   * @param {object} message le message reçu
-   */ 
-   socket.on('message', function(message) { 
-      var data;
+    var connection = request.accept(null, request.origin);
+    
+    request.setMaxListeners(100);
+    var socket = connection;
+    /**
+    * Un gestionnaire d'évènement "message", quand le serveur reçoit un message d'un utilisateur connecté.   
+    * 
+    * @author: Habib & Anis
+    * @param {object} message le message reçu
+    */ 
+    connection.on('message', function(message) { 
+      var data; 
       //on  n'acceptant que les messages JSON
+      print(message);
       try { 
-         data = JSON.parse(message); 
+        print(message);
+         data = JSON.parse(message.utf8Data);
+         print(data); 
       } catch (e) { 
          console.log("Invalid JSON"); 
          data = {}; 
       }
-      
+      print(data['type']);
       // switch selon le type du message utilisateur
-      switch (data.type) { 
+      switch (data["type"]) { 
          // lorsqu'un utilisateur tente de se connecter
-         case "login": 
+         case "login":
+
             console.log("User logged ", data.name); 
             // si quelqu'un est connecté avec ce nom d'utilisateur, alors refuse
             if(users[data.name]) { 
@@ -124,7 +187,7 @@ webSocket.on('connection', function(socket) {
    * Un gestionnaire d'évènement "close", détecte la fermeture de la connexion à l'initiative du serveur. 
    * @author: Habib & Anis
    */ 
-   socket.on("close", function() { 
+   connection.on("close", function() { 
    
       if(socket.name) { 
          delete users[socket.name]; 
@@ -143,10 +206,9 @@ webSocket.on('connection', function(socket) {
       }
       
    });  
-
-    socket.send('{"type":true, "success":true}');  
+  connection.send('{"type":true, "success":true}');
 });
-  
+
 /**
 * Fonction qui permet d'envoiyer des message à un utilisateur (à une socket précise).  
 *
@@ -155,5 +217,8 @@ webSocket.on('connection', function(socket) {
 * @this {object} message la message à envoiyer
 */
 function sendTo(socket, message) { 
-   socket.send(JSON.stringify(message)); 
+    socket.send(JSON.stringify(message)); 
 }
+ 
+
+  
