@@ -9,13 +9,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-<<<<<<< HEAD
     "express": "^4.16.4",
     "libsodium": "^0.7.3",
     "libsodium-wrappers": "^0.7.3",
     "websocket": "^1.0.28"
-=======
-    "express": "^4.16.4"
->>>>>>> 85e61d542c224b5bc4671587b9c4ef0335d7b503
   }
 }

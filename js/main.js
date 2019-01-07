@@ -10,14 +10,9 @@ var name;
 //
 var user;
 // connexion à notre serveur de signalisation
-<<<<<<< HEAD
 //var socket = new WebSocket("ws://52.47.102.211:8080");
 var socket = new WebSocket("ws://localhost:8080");
 
-=======
-var socket = new WebSocket("ws://52.47.102.211:8080");
- 
->>>>>>> 85e61d542c224b5bc4671587b9c4ef0335d7b503
 // variables récuperer à l'aide des query selector 
 var divLogin = document.querySelector('#divlogin'); 
 var userName = document.querySelector('#username'); 
@@ -36,11 +31,7 @@ var stream;
 //variable de configuration de l'objet RTCPeerconnection, on utilisent les serveurs stun/turn de Google  
 var configuration = { "iceServers": 
               [{ "urls": "stun:stun2.1.google.com:19302" },
-<<<<<<< HEAD
               {"urls": 'turn:numb.viagenie.ca',"credential": 'muazkh',"username": 'webrtc@live.com'}]}; 
-=======
-              {urls: 'turn:numb.viagenie.ca',credential: 'muazkh',username: 'webrtc@live.com'}]}; 
->>>>>>> 85e61d542c224b5bc4671587b9c4ef0335d7b503
 
 //  ici on cache la page de login 
 divPrimry.style.display = "none";
@@ -79,7 +70,6 @@ socket.onerror = function (err) {
 * @param {object} message : le message reçu du serveur.
 */ 
 socket.onmessage = function (message) { 
-<<<<<<< HEAD
    console.log("Le message : ", message['data']);
    var data = JSON.parse(message['data']); 
    console.log(callToUsername['value']);
@@ -99,27 +89,6 @@ socket.onmessage = function (message) {
       case "candidate": 
       	// quand un utilisateur distant nous envoie un candidat
         handleCandidate(data['candidate']); 
-=======
-   console.log("Le message : ", message.data);
-   var data = JSON.parse(message.data); 
-   console.log(callToUsername.value);
-   switch(data.type) { 
-      case "login": 
-      	// quand quelqu'un veut nous appeler
-        handleLogin(data.success); 
-        break; 
-      case "offer":
-      	// quand l'offrer est crée
-        handleOffer(data.offer, data.name); 
-        break; 
-      case "answer": 
-      	// quand la repence est crée
-        handleAnswer(data.answer); 
-        break; 
-      case "candidate": 
-      	// quand un utilisateur distant nous envoie un candidat
-        handleCandidate(data.candidate); 
->>>>>>> 85e61d542c224b5bc4671587b9c4ef0335d7b503
         break; 
       case "leave":
         // quand un utilisateur quitte la déscussion  
@@ -140,11 +109,7 @@ socket.onmessage = function (message) {
 function send(message) { 
   // affecter le nom de l'autre utilisateur peer à nos messages
   if (user) { 
-<<<<<<< HEAD
     message['name'] = user; 
-=======
-    message.name = user; 
->>>>>>> 85e61d542c224b5bc4671587b9c4ef0335d7b503
   } 
   // envoi du message à l'aide nde notre serveur de sinialisation
   socket.send(JSON.stringify(message)); 
@@ -169,13 +134,8 @@ function initRTC(){
             	if (event.candidate) { 
             		// envoi d'un message de type candidate
 	               	send({ 
-<<<<<<< HEAD
 	                  	"type": "candidate", 
 	                  	"candidate": event.candidate 
-=======
-	                  	type: "candidate", 
-	                  	candidate: event.candidate 
->>>>>>> 85e61d542c224b5bc4671587b9c4ef0335d7b503
 	               	}); 
             	} 
          	};  
@@ -191,7 +151,6 @@ function initRTC(){
 * @param {object} message : le message à envoiyer.
 */ 
 loginButton.addEventListener("click", function (event) { 
-<<<<<<< HEAD
   name = username['value'];
   //si l'utilisateur tape un username
   if (name['length'] > 0) { 
@@ -199,15 +158,6 @@ loginButton.addEventListener("click", function (event) {
   	send({ 
     	"type": "login", 
      	"name": name 
-=======
-  name = username.value;
-  //si l'utilisateur tape un username
-  if (name.length > 0) { 
-   	// envoi un message de type login avec le nom de l'utilisateur au serveur
-  	send({ 
-    	type: "login", 
-     	name: name 
->>>>>>> 85e61d542c224b5bc4671587b9c4ef0335d7b503
   	}); 
   }  
 });
@@ -218,21 +168,12 @@ loginButton.addEventListener("click", function (event) {
 * @author: Habib & Anis
 */ 
 callButton.addEventListener("click", function () {
-<<<<<<< HEAD
     var username = callToUsername['value'];
     if(localPeer['signalingState'] === 'closed'){	
   		initRTC();
   	}
     //si en tape un username
     if (username['length'] > 0) {
-=======
-    var username = callToUsername.value;
-    if(localPeer.signalingState === 'closed'){	
-  		initRTC();
-  	}
-    //si en tape un username
-    if (username.length > 0) {
->>>>>>> 85e61d542c224b5bc4671587b9c4ef0335d7b503
         user = username;
         // creation de l'offre 
         localPeer.createOffer().then(function (offer) {
@@ -241,13 +182,8 @@ callButton.addEventListener("click", function () {
           localPeer.setLocalDescription(offer);
           // envoi d'un message de type offer au serveur 
           send({ 
-<<<<<<< HEAD
               "type": "offer", 
               "offer": offer 
-=======
-              type: "offer", 
-              offer: offer 
->>>>>>> 85e61d542c224b5bc4671587b9c4ef0335d7b503
           }); 
         }).catch(function (error) { 
           console.log(error);
@@ -264,11 +200,7 @@ callButton.addEventListener("click", function () {
 hangUpButton.addEventListener("click", function () { 
   //envoi d'un message de type leave au serveur
   send({ 
-<<<<<<< HEAD
       "type": "leave" 
-=======
-      type: "leave" 
->>>>>>> 85e61d542c224b5bc4671587b9c4ef0335d7b503
   });  
   // appelle de la fonction handleLeave
   handleLeave(); 
@@ -317,11 +249,7 @@ function handleLogin(success) {
 */ 
 function handleOffer(offer, name) { 
   user = name; 
-<<<<<<< HEAD
   if(localPeer['signalingState'] === 'closed'){	
-=======
-  if(localPeer.signalingState === 'closed'){	
->>>>>>> 85e61d542c224b5bc4671587b9c4ef0335d7b503
   	initRTC();
   }
   // cette méthode  modifie la description distante associée à la connexion.
@@ -333,13 +261,8 @@ function handleOffer(offer, name) {
     localPeer.setLocalDescription(answer); 
     // envoi d'un messsage de type answer au serveur
     send({ 
-<<<<<<< HEAD
       "type": "answer", 
       "answer": answer 
-=======
-      type: "answer", 
-      answer: answer 
->>>>>>> 85e61d542c224b5bc4671587b9c4ef0335d7b503
     }); 
   }).catch(function (error) { 
   	alert("Erreur lors de la création d'une réponse"); 
